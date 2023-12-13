@@ -1,15 +1,18 @@
 import { NxMonorepoProject } from "@aws-prototyping-sdk/nx-monorepo";
-import { PDKPipelineTsProject } from "@aws-prototyping-sdk/pipeline"
+import { PDKPipelineTsProject } from "@aws-prototyping-sdk/pipeline";
 import { ApprovalLevel } from "projen/lib/awscdk";
-import { ReactTypeScriptProject } from "projen/lib/web";
+import {
+  TypeScriptJsxMode,
+  TypeScriptModuleResolution,
+} from "projen/lib/javascript";
 import { TypeScriptProject } from "projen/lib/typescript";
-import { TypeScriptJsxMode, TypeScriptModuleResolution } from "projen/lib/javascript";
+import { ReactTypeScriptProject } from "projen/lib/web";
 
 const monorepo = new NxMonorepoProject({
   defaultReleaseBranch: "main",
   name: "@aws/threat-composer-monorepo",
   devDeps: [
-    "@aws-prototyping-sdk/nx-monorepo@^0.19.2", 
+    "@aws-prototyping-sdk/nx-monorepo@^0.19.2",
     "@aws-prototyping-sdk/pipeline@^0.19.2",
     "@aws-prototyping-sdk/pdk-nag@^0.19.2",
     "eslint-plugin-header",
@@ -18,59 +21,83 @@ const monorepo = new NxMonorepoProject({
   ],
 });
 
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.@types/react", "^18.0.27");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.react", "^18.2.0");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.nth-check", "^2.1.1");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.yaml", "^2.2.2");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.js-yaml", "^3.13.1");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.semver", "^7.5.3");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.@babel/traverse", "^7.23.2");
-monorepo.tryFindObjectFile("package.json")?.addOverride("resolutions.postcss", "^8.4.31");
-monorepo.addGitIgnore('.temp/');
-monorepo.addGitIgnore('oss-attribution/');
-monorepo.addGitIgnore('storybook.out/');
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.@types/react", "^18.0.27");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.react", "^18.2.0");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.nth-check", "^2.1.1");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.yaml", "^2.2.2");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.js-yaml", "^3.13.1");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.semver", "^7.5.3");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.@babel/traverse", "^7.23.2");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("resolutions.postcss", "^8.4.31");
+monorepo
+  .tryFindObjectFile("package.json")
+  ?.addOverride("workspaces.nohoist", ["**/wxt"]);
+monorepo.addGitIgnore(".temp/");
+monorepo.addGitIgnore("oss-attribution/");
+monorepo.addGitIgnore("storybook.out/");
+monorepo.addGitIgnore("build_extension/");
+monorepo.addGitIgnore(".DS_Store");
+monorepo.addGitIgnore(".output/");
 
-monorepo.addTask('export:examples', {
+monorepo.addTask("export:examples", {
   steps: [
     {
-      "spawn": "build"
+      spawn: "build",
     },
     {
-      "exec": 'node ./scripts/exportExamples.js',
-    }
-  ]
+      exec: "node ./scripts/exportExamples.js",
+    },
+  ],
 });
 
-monorepo.addTask('prepare', {
+monorepo.addTask("prepare", {
   steps: [
     {
-      "exec": 'husky install',
-    }
-  ]
+      exec: "husky install",
+    },
+  ],
 });
 
-monorepo.addTask('generate:attribution', {
-  exec: 'git secrets --scan && generate-attribution && mv oss-attribution/attribution.txt LICENSE-THIRD-PARTY'
+monorepo.addTask("generate:attribution", {
+  exec: "git secrets --scan && generate-attribution && mv oss-attribution/attribution.txt LICENSE-THIRD-PARTY",
 });
 
-monorepo.addTask('license:checker', {
-  exec: "yarn license-checker --summary --production --excludePrivatePackages --onlyAllow 'MIT;Apache-2.0;ISC;'"
+monorepo.addTask("license:checker", {
+  exec: "yarn license-checker --summary --production --excludePrivatePackages --onlyAllow 'MIT;Apache-2.0;ISC;'",
 });
 
-monorepo.addTask('dev', {
-  exec: 'GENERATE_SOURCEMAP=false npx nx run @aws/threat-composer-app:dev'
+monorepo.addTask("dev", {
+  exec: "GENERATE_SOURCEMAP=false npx nx run @aws/threat-composer-app:dev",
 });
 
-monorepo.addTask('storybook', {
-  exec: 'GENERATE_SOURCEMAP=false npx nx run @aws/threat-composer:storybook'
+monorepo.addTask("storybook", {
+  exec: "GENERATE_SOURCEMAP=false npx nx run @aws/threat-composer:storybook",
 });
 
-monorepo.compileTask.reset('npx nx run-many --target=build --all --skip-nx-cache --nx-bail');
-monorepo.postCompileTask.reset('yarn run generate:attribution && yarn run license:checker');
+monorepo.compileTask.reset(
+  "npx nx run-many --target=build --all --skip-nx-cache --nx-bail"
+);
+monorepo.postCompileTask.reset(
+  "yarn run generate:attribution && yarn run license:checker"
+);
 
-const uiESModules = [ 
-  "unified",
-].join("|");
+const uiESModules = ["unified"].join("|");
 
 const uiProject = new TypeScriptProject({
   parent: monorepo,
@@ -91,11 +118,11 @@ const uiProject = new TypeScriptProject({
     "react-simply-carousel",
     "browser-image-compression",
     "remark-parse",
-    'remark-gfm',
+    "remark-gfm",
     "remark-rehype",
     "rehype-stringify",
-    'remark-frontmatter',
-    'react-markdown',
+    "remark-frontmatter",
+    "react-markdown",
     "d3@^7",
     "sanitize-html",
     "rehype-raw",
@@ -142,7 +169,7 @@ const uiProject = new TypeScriptProject({
       transformIgnorePatterns: [
         `[/\\\\]node_modules[/\\\\](?!${uiESModules}).+\\.(js|jsx|mjs|cjs|ts|tsx)$`,
       ],
-    }, 
+    },
   },
   tsconfig: {
     compilerOptions: {
@@ -155,27 +182,26 @@ const uiProject = new TypeScriptProject({
     },
   },
   tsconfigDev: {
-    compilerOptions: {
-    },
-    include: [
-      "src",
-    ]
-  }
+    compilerOptions: {},
+    include: ["src"],
+  },
 });
 
-uiProject.addTask('storybook', {
-  exec: 'storybook dev -p 6006'
+uiProject.addTask("storybook", {
+  exec: "storybook dev -p 6006",
 });
 
-uiProject.addTask('storybook:build', {
-  exec: 'storybook build -o storybook.out'
+uiProject.addTask("storybook:build", {
+  exec: "storybook build -o storybook.out",
 });
 
-uiProject.preCompileTask.reset('rm -rf {lib,dist}')
-uiProject.postCompileTask.reset('rsync -arv --prune-empty-dirs --include=*/ --include=*.css --include=*.png --include=*.gif --exclude=* ./src/* ./lib');
-uiProject.postCompileTask.exec('yarn run storybook:build');
+uiProject.preCompileTask.reset("rm -rf {lib,dist}");
+uiProject.postCompileTask.reset(
+  "rsync -arv --prune-empty-dirs --include=*/ --include=*.css --include=*.png --include=*.gif --exclude=* ./src/* ./lib"
+);
+uiProject.postCompileTask.exec("yarn run storybook:build");
 
-uiProject.eslint?.addPlugins('header');
+uiProject.eslint?.addPlugins("header");
 uiProject.eslint?.addRules({
   "header/header": [2, "../../header.js"],
 });
@@ -204,14 +230,20 @@ const appProject = new ReactTypeScriptProject({
   },
 });
 
-appProject.eslint?.addPlugins('header');
+appProject.eslint?.addPlugins("header");
 appProject.eslint?.addRules({
   "header/header": [2, "../../header.js"],
 });
 
-appProject.testTask.reset('react-scripts test --watchAll=false --passWithNoTests');
-appProject.postCompileTask.reset(`[ -d ./build/storybook ] || mkdir -p ./build/storybook`);
-appProject.postCompileTask.exec(`cp -r ../threat-composer/storybook.out/ ./build/storybook/`);
+appProject.testTask.reset(
+  "react-scripts test --watchAll=false --passWithNoTests"
+);
+appProject.postCompileTask.reset(
+  `[ -d ./build/storybook ] || mkdir -p ./build/storybook`
+);
+appProject.postCompileTask.exec(
+  `cp -r ../threat-composer/storybook.out/ ./build/storybook/`
+);
 
 const infraProject = new PDKPipelineTsProject({
   cdkVersion: "2.81.0",
@@ -221,23 +253,80 @@ const infraProject = new PDKPipelineTsProject({
   parent: monorepo,
   outdir: "packages/threat-composer-infra",
   requireApproval: ApprovalLevel.NEVER,
-  deps: [
-    "@aws-prototyping-sdk/static-website@^0.18.18",
-  ],
+  deps: ["@aws-prototyping-sdk/static-website@^0.18.18"],
   tsconfig: {
     compilerOptions: {
-      lib: ['es2019', 'es2020', 'dom'],
+      lib: ["es2019", "es2020", "dom"],
       skipLibCheck: true,
     },
-  }
+  },
 });
 
-infraProject.eslint?.addPlugins('header');
+infraProject.eslint?.addPlugins("header");
 infraProject.eslint?.addRules({
+  "header/header": [2, "../../header.js"],
+});
+
+const browserExtensionProject = new TypeScriptProject({
+  parent: monorepo,
+  outdir: "packages/threat-composer-app-browser-extension",
+  defaultReleaseBranch: "main",
+  name: "@aws/threat-composer-app-browser-extension",
+  deps: [
+    "react-router-dom",
+    "@cloudscape-design/components",
+    "react",
+    "react-dom",
+  ],
+  devDeps: [
+    "wxt",
+    "@vitejs/plugin-react",
+    "rollup-plugin-copy",
+    "@types/react",
+    "@types/react-dom",
+  ],
+  sampleCode: false,
+  tsconfig: {
+    compilerOptions: {
+      lib: ["dom", "dom.iterable"],
+    },
+    include: ["src"],
+  },
+});
+
+browserExtensionProject.addTask("dev", {
+  exec: "cd ../threat-composer-app; INLINE_RUNTIME_CHUNK=false BUILD_PATH=./build_extension yarn run build; cd ../threat-composer-app-browser-extension; wxt",
+});
+
+browserExtensionProject.addTask("dev:firefox", {
+  exec: "cd ../threat-composer-app; INLINE_RUNTIME_CHUNK=false BUILD_PATH=./build_extension yarn run build; cd ../threat-composer-app-browser-extension; wxt --browser firefox",
+});
+
+browserExtensionProject.removeTask("build"); //Needed as Projen does not allow reset of existing - https://github.com/projen/projen/issues/754
+
+browserExtensionProject.addTask("build", {
+  exec: "cd ../threat-composer-app; INLINE_RUNTIME_CHUNK=false BUILD_PATH=./build_extension yarn run build; cd ../threat-composer-app-browser-extension; wxt build",
+});
+
+browserExtensionProject.addTask("zip", {
+  exec: "wxt zip",
+});
+
+browserExtensionProject.addTask("zip:firefox", {
+  exec: "wxt zip --browser firefox",
+});
+
+browserExtensionProject.addTask("postinstall", {
+  exec: "wxt prepare",
+});
+
+browserExtensionProject.eslint?.addPlugins("header");
+browserExtensionProject.eslint?.addRules({
   "header/header": [2, "../../header.js"],
 });
 
 monorepo.addImplicitDependency(appProject, uiProject);
 monorepo.addImplicitDependency(infraProject, appProject);
+monorepo.addImplicitDependency(browserExtensionProject, appProject);
 
 monorepo.synth();
